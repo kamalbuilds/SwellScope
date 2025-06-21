@@ -1,0 +1,5 @@
+node_modules
+.env
+.cursorrules
+SWELLCHAIN_APPLICATION.md
+.next/
