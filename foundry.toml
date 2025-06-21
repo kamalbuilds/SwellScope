@@ -1,0 +1,39 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+remappings = [
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "@boring-vault/=lib/boring-vault/src/",
+    "@forge-std/=lib/forge-std/src/",
+    "@solmate/=lib/solmate/src/",
+    "@chainlink/=lib/chainlink-brownie-contracts/contracts/",
+]
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+
+[profile.default.optimizer]
+enabled = true
+runs = 200
+
+[profile.default.model_checker]
+contracts = { '/src' = [ 'all' ] }
+engine = 'chc'
+timeout = 10000
+targets = [ 'assert', 'underflow', 'overflow', 'divByZero', 'constantCondition', 'popEmptyArray', 'outOfBounds' ]
+
+[profile.ci]
+fuzz = { runs = 10000 }
+invariant = { runs = 1000, depth = 1000, fail_on_revert = false }
+
+# Swellchain network configurations
+[rpc_endpoints]
+swellchain = "https://swell-mainnet.alt.technology"
+swellchain_testnet = "https://swell-testnet.alt.technology"
+ethereum = "${ETHEREUM_RPC_URL}"
+optimism = "${OPTIMISM_RPC_URL}"
+
+[etherscan]
+swellchain = { key = "${SWELLCHAIN_ETHERSCAN_API_KEY}", url = "https://explorer.swellnetwork.io/api" }
+ethereum = { key = "${ETHERSCAN_API_KEY}" }
+optimism = { key = "${OPTIMISM_ETHERSCAN_API_KEY}" } 
