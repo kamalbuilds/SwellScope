@@ -2,8 +2,8 @@
 pragma solidity ^0.8.21;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/ISwellScopeVault.sol";
@@ -52,39 +52,6 @@ contract SwellScopeVault is ERC4626, ReentrancyGuard, Pausable, AccessControl, I
     // Emergency exit state
     bool public emergencyExitTriggered;
     uint256 public lastRiskUpdate;
-    
-    struct StrategyInfo {
-        bool active;
-        uint256 allocation; // basis points (10000 = 100%)
-        uint256 riskScore;
-        uint256 expectedYield;
-        uint256 tvl;
-        address strategyAddress;
-    }
-    
-    struct RiskProfile {
-        uint256 maxRiskScore;
-        uint256 preferredYield;
-        bool autoRebalance;
-        uint256 lastRebalance;
-    }
-    
-    struct AVSInfo {
-        string name;
-        uint256 performanceScore;
-        uint256 slashingRisk;
-        bool isActive;
-        uint256 totalStaked;
-    }
-
-    // Events
-    event StrategyAdded(address indexed strategy, uint256 allocation, uint256 riskScore);
-    event StrategyRemoved(address indexed strategy);
-    event RiskProfileUpdated(address indexed user, uint256 maxRisk, bool autoRebalance);
-    event EmergencyExitTriggered(uint256 riskScore);
-    event AutoRebalanceExecuted(address indexed user, uint256 oldAllocation, uint256 newAllocation);
-    event FeesUpdated(uint256 managementFee, uint256 performanceFee);
-    event AVSPerformanceUpdated(address indexed avs, uint256 score, uint256 slashingRisk);
 
     constructor(
         IERC20 _asset,
@@ -106,21 +73,17 @@ contract SwellScopeVault is ERC4626, ReentrancyGuard, Pausable, AccessControl, I
 
     /**
      * @dev Add a new restaking strategy to the vault
-     * @param strategy Address of the strategy contract
-     * @param allocation Allocation percentage in basis points
-     * @param riskScore Risk score of the strategy (0-100)
-     * @param expectedYield Expected annual yield in basis points
      */
     function addStrategy(
         address strategy,
         uint256 allocation,
         uint256 riskScore,
         uint256 expectedYield
-    ) external onlyRole(STRATEGIST_ROLE) {
+    ) external override onlyRole(STRATEGIST_ROLE) {
         require(strategy != address(0), "Invalid strategy address");
         require(!strategies[strategy].active, "Strategy already exists");
         require(riskScore <= MAX_RISK_SCORE, "Risk score too high");
-        require(_getTotalAllocation() + allocation <= 10000, "Total allocation exceeds 100%");
+        require(getTotalAllocation() + allocation <= 10000, "Total allocation exceeds 100%");
 
         strategies[strategy] = StrategyInfo({
             active: true,
@@ -137,9 +100,8 @@ contract SwellScopeVault is ERC4626, ReentrancyGuard, Pausable, AccessControl, I
 
     /**
      * @dev Remove a strategy from the vault
-     * @param strategy Address of the strategy to remove
      */
-    function removeStrategy(address strategy) external onlyRole(STRATEGIST_ROLE) {
+    function removeStrategy(address strategy) external override onlyRole(STRATEGIST_ROLE) {
         require(strategies[strategy].active, "Strategy not active");
         
         // Exit the strategy position
@@ -153,13 +115,11 @@ contract SwellScopeVault is ERC4626, ReentrancyGuard, Pausable, AccessControl, I
 
     /**
      * @dev Update user risk profile
-     * @param maxRiskScore Maximum acceptable risk score
-     * @param autoRebalance Enable automatic rebalancing
      */
     function updateRiskProfile(
         uint256 maxRiskScore,
         bool autoRebalance
-    ) external {
+    ) external override {
         require(maxRiskScore <= MAX_RISK_SCORE, "Risk score too high");
         
         userRiskProfiles[msg.sender] = RiskProfile({
@@ -178,16 +138,15 @@ contract SwellScopeVault is ERC4626, ReentrancyGuard, Pausable, AccessControl, I
 
     /**
      * @dev Execute automatic rebalancing for a user
-     * @param user Address of the user
      */
-    function executeAutoRebalance(address user) external onlyRole(RISK_MANAGER_ROLE) {
+    function executeAutoRebalance(address user) external override onlyRole(RISK_MANAGER_ROLE) {
         _executeAutoRebalance(user);
     }
 
     /**
      * @dev Trigger emergency exit from all strategies
      */
-    function triggerEmergencyExit() external onlyRole(EMERGENCY_ROLE) {
+    function triggerEmergencyExit() external override onlyRole(EMERGENCY_ROLE) {
         emergencyExitTriggered = true;
         _pause();
         
@@ -198,18 +157,16 @@ contract SwellScopeVault is ERC4626, ReentrancyGuard, Pausable, AccessControl, I
             }
         }
         
-        emit EmergencyExitTriggered(_getPortfolioRiskScore());
+        emit EmergencyExitTriggered(getPortfolioRiskScore());
     }
 
     /**
      * @dev Update management and performance fees
-     * @param _managementFee New management fee in basis points
-     * @param _performanceFee New performance fee in basis points
      */
     function updateFees(
         uint256 _managementFee,
         uint256 _performanceFee
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_managementFee <= MAX_MANAGEMENT_FEE, "Management fee too high");
         require(_performanceFee <= MAX_PERFORMANCE_FEE, "Performance fee too high");
         
@@ -221,15 +178,12 @@ contract SwellScopeVault is ERC4626, ReentrancyGuard, Pausable, AccessControl, I
 
     /**
      * @dev Update AVS performance metrics
-     * @param avs Address of the AVS service
-     * @param performanceScore Performance score (0-100)
-     * @param slashingRisk Slashing risk score (0-100)
      */
     function updateAVSPerformance(
         address avs,
         uint256 performanceScore,
         uint256 slashingRisk
-    ) external onlyRole(RISK_MANAGER_ROLE) {
+    ) external override onlyRole(RISK_MANAGER_ROLE) {
         require(performanceScore <= 100, "Performance score too high");
         require(slashingRisk <= 100, "Slashing risk too high");
         
@@ -240,49 +194,62 @@ contract SwellScopeVault is ERC4626, ReentrancyGuard, Pausable, AccessControl, I
         
         // Check if emergency exit should be triggered
         if (slashingRisk >= EMERGENCY_EXIT_THRESHOLD && !emergencyExitTriggered) {
-            triggerEmergencyExit();
+            this.triggerEmergencyExit();
         }
     }
 
     /**
      * @dev Get the total allocation across all strategies
-     * @return Total allocation in basis points
      */
-    function getTotalAllocation() external view returns (uint256) {
-        return _getTotalAllocation();
+    function getTotalAllocation() public view override returns (uint256) {
+        uint256 totalAllocation = 0;
+        for (uint256 i = 0; i < strategyList.length; i++) {
+            if (strategies[strategyList[i]].active) {
+                totalAllocation += strategies[strategyList[i]].allocation;
+            }
+        }
+        return totalAllocation;
     }
 
     /**
-     * @dev Get the portfolio risk score
-     * @return Weighted average risk score
+     * @dev Get portfolio risk score
      */
-    function getPortfolioRiskScore() external view returns (uint256) {
-        return _getPortfolioRiskScore();
+    function getPortfolioRiskScore() public view override returns (uint256) {
+        if (strategyList.length == 0) return 0;
+        
+        uint256 weightedRisk = 0;
+        uint256 totalAllocation = getTotalAllocation();
+        
+        if (totalAllocation == 0) return 0;
+        
+        for (uint256 i = 0; i < strategyList.length; i++) {
+            if (strategies[strategyList[i]].active) {
+                StrategyInfo memory strategy = strategies[strategyList[i]];
+                weightedRisk += (strategy.riskScore * strategy.allocation) / totalAllocation;
+            }
+        }
+        
+        return weightedRisk;
     }
 
     /**
-     * @dev Get user's risk profile
-     * @param user Address of the user
-     * @return RiskProfile struct
+     * @dev Get user risk profile
      */
-    function getUserRiskProfile(address user) external view returns (RiskProfile memory) {
+    function getUserRiskProfile(address user) external view override returns (RiskProfile memory) {
         return userRiskProfiles[user];
     }
 
     /**
-     * @dev Get strategy information
-     * @param strategy Address of the strategy
-     * @return StrategyInfo struct
+     * @dev Get strategy info
      */
-    function getStrategyInfo(address strategy) external view returns (StrategyInfo memory) {
+    function getStrategyInfo(address strategy) external view override returns (StrategyInfo memory) {
         return strategies[strategy];
     }
 
     /**
-     * @dev Get all active strategies
-     * @return Array of strategy addresses
+     * @dev Get active strategies
      */
-    function getActiveStrategies() external view returns (address[] memory) {
+    function getActiveStrategies() external view override returns (address[] memory) {
         uint256 activeCount = 0;
         for (uint256 i = 0; i < strategyList.length; i++) {
             if (strategies[strategyList[i]].active) {
@@ -302,60 +269,32 @@ contract SwellScopeVault is ERC4626, ReentrancyGuard, Pausable, AccessControl, I
         return activeStrategies;
     }
 
-    // Internal functions
-    function _getTotalAllocation() internal view returns (uint256) {
-        uint256 total = 0;
-        for (uint256 i = 0; i < strategyList.length; i++) {
-            if (strategies[strategyList[i]].active) {
-                total += strategies[strategyList[i]].allocation;
-            }
-        }
-        return total;
-    }
-
-    function _getPortfolioRiskScore() internal view returns (uint256) {
-        uint256 weightedRisk = 0;
-        uint256 totalAllocation = 0;
-        
-        for (uint256 i = 0; i < strategyList.length; i++) {
-            if (strategies[strategyList[i]].active) {
-                StrategyInfo memory strategy = strategies[strategyList[i]];
-                weightedRisk += strategy.riskScore * strategy.allocation;
-                totalAllocation += strategy.allocation;
-            }
-        }
-        
-        return totalAllocation > 0 ? weightedRisk / totalAllocation : 0;
-    }
-
+    // Internal helper functions
     function _executeAutoRebalance(address user) internal {
         RiskProfile memory profile = userRiskProfiles[user];
-        require(profile.autoRebalance, "Auto rebalancing not enabled");
+        if (!profile.autoRebalance) return;
         
-        uint256 currentRisk = _getPortfolioRiskScore();
-        if (currentRisk <= profile.maxRiskScore) {
-            return; // No rebalancing needed
+        uint256 currentRisk = getPortfolioRiskScore();
+        if (currentRisk <= profile.maxRiskScore) return;
+        
+        // Simple rebalancing logic - reduce high-risk strategy allocations
+        for (uint256 i = 0; i < strategyList.length; i++) {
+            address strategy = strategyList[i];
+            if (strategies[strategy].active && strategies[strategy].riskScore > profile.maxRiskScore) {
+                uint256 oldAllocation = strategies[strategy].allocation;
+                uint256 newAllocation = oldAllocation * profile.maxRiskScore / strategies[strategy].riskScore;
+                strategies[strategy].allocation = newAllocation;
+                
+                emit AutoRebalanceExecuted(user, oldAllocation, newAllocation);
+            }
         }
         
-        // Calculate new allocations to reduce risk
-        uint256 oldAllocation = _getTotalAllocation();
-        uint256 newAllocation = _calculateOptimalAllocation(profile.maxRiskScore);
-        
-        // Execute rebalancing logic here
         userRiskProfiles[user].lastRebalance = block.timestamp;
-        
-        emit AutoRebalanceExecuted(user, oldAllocation, newAllocation);
-    }
-
-    function _calculateOptimalAllocation(uint256 maxRisk) internal view returns (uint256) {
-        // Implement optimization algorithm to find best allocation within risk constraints
-        // This is a simplified version - production would use more sophisticated optimization
-        return maxRisk * 100; // Placeholder calculation
     }
 
     function _exitStrategy(address strategy) internal {
-        // Implement strategy exit logic
-        // This would interact with the specific strategy contract to withdraw funds
+        // This would implement the actual strategy exit logic
+        // For now, just mark as inactive
         strategies[strategy].tvl = 0;
     }
 
@@ -367,34 +306,5 @@ contract SwellScopeVault is ERC4626, ReentrancyGuard, Pausable, AccessControl, I
                 break;
             }
         }
-    }
-
-    // Override ERC4626 functions to add risk management
-    function _deposit(
-        address caller,
-        address receiver,
-        uint256 assets,
-        uint256 shares
-    ) internal override nonReentrant whenNotPaused {
-        // Check if deposit would exceed risk limits
-        require(!emergencyExitTriggered, "Emergency exit active");
-        
-        super._deposit(caller, receiver, assets, shares);
-        
-        // Update risk metrics after deposit
-        lastRiskUpdate = block.timestamp;
-    }
-
-    function _withdraw(
-        address caller,
-        address receiver,
-        address owner,
-        uint256 assets,
-        uint256 shares
-    ) internal override nonReentrant {
-        super._withdraw(caller, receiver, owner, assets, shares);
-        
-        // Update risk metrics after withdrawal
-        lastRiskUpdate = block.timestamp;
     }
 } 

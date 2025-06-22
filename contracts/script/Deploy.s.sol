@@ -3,18 +3,18 @@ pragma solidity ^0.8.21;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import "../src/SwellScopeVault.sol";
 import "../src/RiskOracle.sol";
 import "../src/SwellChainIntegration.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "../src/SwellScopeVault.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
- * @title SwellScope Deployment Script
- * @dev Deploys all SwellScope contracts to Swellchain with real contract addresses
- * @dev Run with: forge script script/Deploy.s.sol --rpc-url $SWELLCHAIN_RPC_URL --broadcast
+ * @title Deploy
+ * @dev Production deployment script for SwellScope contracts on Swellchain
+ * @dev Uses real contract addresses and proper initialization
  */
-contract DeployScript is Script {
-    // Deployment configuration
+contract Deploy is Script {
+    
     struct DeploymentConfig {
         address deployer;
         address swETH;
@@ -25,26 +25,25 @@ contract DeployScript is Script {
         address nucleusManager;
         bool isTestnet;
     }
-
-    // Contract instances
-    SwellScopeVault public swellScopeVault;
+    
+    // Deployed contract instances
     RiskOracle public riskOracle;
     SwellChainIntegration public swellChainIntegration;
-
-    // Real contract addresses on Swellchain and Ethereum
-    // swETH and rswETH would be bridged to Swellchain - these are placeholder addresses
-    address constant SWELLCHAIN_SWETH = 0x0000000000000000000000000000000000000000; // To be updated with real bridged address
-    address constant SWELLCHAIN_RSWETH = 0x0000000000000000000000000000000000000000; // To be updated with real bridged address
+    SwellScopeVault public swellScopeVault;
     
-    // Real Swellchain bridge addresses
+    // Real Swellchain addresses (from official documentation)
+    address constant SWELLCHAIN_SWETH = 0xf951E335afb289353dc249e82926178EaC7DEd78; // swETH on Swellchain
+    address constant SWELLCHAIN_RSWETH = 0x0000000000000000000000000000000000000000; // rswETH (may not exist yet)
+    
+    // Standard L2 bridge address (common across all OP Stack chains)
     address constant SWELLCHAIN_L2_BRIDGE = 0x4200000000000000000000000000000000000010; // Standard L2 Bridge
     
     // Real MACH AVS Service Manager on Ethereum (operators would bridge/interact cross-chain)
-    address constant MACH_SERVICE_MANAGER = 0x289dbe6573d6a1daf00110b5b1b2d8f0a34099c2;
+    address constant MACH_SERVICE_MANAGER = 0x289Dbe6573D6a1dAF00110b5B1b2D8F0a34099C2;
     
     // Real Nucleus contracts on Swellchain
-    address constant NUCLEUS_BORING_VAULT = 0x9ed15383940cc380faef0a75edace507cc775f22;
-    address constant NUCLEUS_MANAGER = 0x69fc700226e9e12d8c5e46a4b50a78efb64f50c0;
+    address constant NUCLEUS_BORING_VAULT = 0x9Ed15383940CC380fAEF0a75edacE507cC775f22;
+    address constant NUCLEUS_MANAGER = 0x69FC700226E9e12D8c5E46a4b50A78efB64F50C0;
 
     function setUp() public {}
 
@@ -178,7 +177,7 @@ contract DeployScript is Script {
         console.log("Contracts initialized successfully");
     }
 
-    function logDeploymentInfo(DeploymentConfig memory config) internal view {
+    function logDeploymentInfo(DeploymentConfig memory config) internal {
         console.log("\n=== DEPLOYMENT COMPLETE ===");
         console.log("Network:", config.isTestnet ? "Swellchain Testnet" : "Swellchain Mainnet");
         console.log("Chain ID:", block.chainid);
@@ -197,28 +196,8 @@ contract DeployScript is Script {
         console.log("Nucleus Boring Vault:", config.nucleusBoringVault);
         console.log("Nucleus Manager:", config.nucleusManager);
         
-        // Save deployment info to file
-        string memory deploymentInfo = string(abi.encodePacked(
-            "# SwellScope Deployment Information\n\n",
-            "Network: ", config.isTestnet ? "Swellchain Testnet" : "Swellchain Mainnet", "\n",
-            "Chain ID: ", vm.toString(block.chainid), "\n",
-            "Block Number: ", vm.toString(block.number), "\n",
-            "Timestamp: ", vm.toString(block.timestamp), "\n\n",
-            "## Contract Addresses\n\n",
-            "RiskOracle: ", vm.toString(address(riskOracle)), "\n",
-            "SwellChainIntegration: ", vm.toString(address(swellChainIntegration)), "\n",
-            "SwellScopeVault: ", vm.toString(address(swellScopeVault)), "\n\n",
-            "## Configuration\n\n",
-            "swETH Token: ", vm.toString(config.swETH), "\n",
-            "rswETH Token: ", vm.toString(config.rswETH), "\n",
-            "Standard Bridge: ", vm.toString(config.standardBridge), "\n",
-            "MACH Service Manager: ", vm.toString(config.machServiceManager), "\n",
-            "Nucleus Boring Vault: ", vm.toString(config.nucleusBoringVault), "\n",
-            "Nucleus Manager: ", vm.toString(config.nucleusManager), "\n"
-        ));
-        
-        vm.writeFile("deployment-info.md", deploymentInfo);
-        console.log("Deployment info saved to deployment-info.md");
+        // Save deployment info to file (commented out for simulation compatibility)
+        // vm.writeFile("deployment-info.md", deploymentInfo);
     }
 
     function verifyContracts(DeploymentConfig memory config) internal {
@@ -226,24 +205,30 @@ contract DeployScript is Script {
         console.log("Run these commands to verify contracts on Swellchain block explorer:");
         console.log("");
         
-        console.log("forge verify-contract", address(riskOracle), "src/RiskOracle.sol:RiskOracle");
-        console.log("  --chain-id", block.chainid);
-        console.log("  --constructor-args", abi.encode(config.deployer, config.deployer));
+        console.log("forge verify-contract");
+        console.log(string(abi.encodePacked("  ", vm.toString(address(riskOracle)))));
+        console.log("  src/RiskOracle.sol:RiskOracle");
+        console.log(string(abi.encodePacked("  --chain-id ", vm.toString(block.chainid))));
+        console.log(string(abi.encodePacked("  --constructor-args ", vm.toString(abi.encode(config.deployer, config.deployer)))));
         console.log("");
         
-        console.log("forge verify-contract", address(swellChainIntegration), "src/SwellChainIntegration.sol:SwellChainIntegration");
-        console.log("  --chain-id", block.chainid);
-        console.log("  --constructor-args", abi.encode(
+        console.log("forge verify-contract");
+        console.log(string(abi.encodePacked("  ", vm.toString(address(swellChainIntegration)))));
+        console.log("  src/SwellChainIntegration.sol:SwellChainIntegration");
+        console.log(string(abi.encodePacked("  --chain-id ", vm.toString(block.chainid))));
+        console.log(string(abi.encodePacked("  --constructor-args ", vm.toString(abi.encode(
             config.deployer, config.swETH, config.rswETH, config.standardBridge,
             config.machServiceManager, config.nucleusBoringVault, config.nucleusManager
-        ));
+        )))));
         console.log("");
         
-        console.log("forge verify-contract", address(swellScopeVault), "src/SwellScopeVault.sol:SwellScopeVault");
-        console.log("  --chain-id", block.chainid);
-        console.log("  --constructor-args", abi.encode(
+        console.log("forge verify-contract");
+        console.log(string(abi.encodePacked("  ", vm.toString(address(swellScopeVault)))));
+        console.log("  src/SwellScopeVault.sol:SwellScopeVault");
+        console.log(string(abi.encodePacked("  --chain-id ", vm.toString(block.chainid))));
+        console.log(string(abi.encodePacked("  --constructor-args ", vm.toString(abi.encode(
             config.swETH, "SwellScope Restaking Vault", "ssVault",
             address(riskOracle), address(swellChainIntegration)
-        ));
+        )))));
     }
 } 

@@ -53,7 +53,7 @@ SwellScope is a comprehensive analytics and risk management platform specificall
 
 ```bash
 # Clone the repository
-git clone https://github.com/swellscope/swell-scope.git
+git clone https://github.com/kamalbuilds/swell-scope.git
 cd swell-scope
 
 # Install dependencies
@@ -143,4 +143,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Swell Network](https://swellnetwork.io) for the restaking infrastructure
 - [Optimism](https://optimism.io) for the Superchain architecture
 - [AltLayer](https://altlayer.io) for AVS services
-- [Boring Vault](https://github.com/Se7en-Seas/boring-vault) for the vault architecture 
+- [Boring Vault](https://github.com/Se7en-Seas/boring-vault) for the vault architecture
+
+
+
+swWeth - 0xf951e335afb289353dc249e82926178eac7ded78
+
+rsWeth - 0xfae103dc9cf190ed75350761e95403b7b8afa6c0

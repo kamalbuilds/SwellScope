@@ -124,6 +124,6 @@ ENTRYPOINT ["./docker-entrypoint.sh"]
 LABEL org.opencontainers.image.title="SwellScope"
 LABEL org.opencontainers.image.description="Advanced restaking analytics and risk management platform for Swellchain"
 LABEL org.opencontainers.image.url="https://swellscope.xyz"
-LABEL org.opencontainers.image.source="https://github.com/swellscope/swell-scope"
+LABEL org.opencontainers.image.source="https://github.com/kamalbuilds/swell-scope"
 LABEL org.opencontainers.image.version="1.0.0"
 LABEL org.opencontainers.image.vendor="SwellScope Team" 

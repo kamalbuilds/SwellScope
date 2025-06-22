@@ -551,7 +551,7 @@ sudo -u postgres psql -c "SELECT * FROM pg_stat_activity WHERE state = 'active';
 ## 📞 Support
 
 For deployment support:
-- GitHub Issues: https://github.com/swellscope/swell-scope/issues
+- GitHub Issues: https://github.com/kamalbuilds/swell-scope/issues
 - Discord: https://discord.gg/swellscope
 - Email: support@swellscope.xyz
 
