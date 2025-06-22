@@ -178,8 +178,12 @@ const gracefulShutdown = async (signal: string) => {
     logger.info('Database connection closed');
     
     // Close Redis connection
-    redis.disconnect();
-    logger.info('Redis connection closed');
+    try {
+      await redis.disconnect();
+      logger.info('Redis connection closed');
+    } catch (error) {
+      logger.error('Error while disconnecting Redis:', error);
+    }
     
     logger.info('Graceful shutdown completed');
     process.exit(0);
