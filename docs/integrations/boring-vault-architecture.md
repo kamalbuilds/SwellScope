@@ -1,0 +1,2 @@
+# Boring Vault Architecture
+
