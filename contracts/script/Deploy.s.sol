@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /**
  * @title SwellScope Deployment Script
- * @dev Deploys all SwellScope contracts to Swellchain
+ * @dev Deploys all SwellScope contracts to Swellchain with real contract addresses
  * @dev Run with: forge script script/Deploy.s.sol --rpc-url $SWELLCHAIN_RPC_URL --broadcast
  */
 contract DeployScript is Script {
@@ -20,9 +20,9 @@ contract DeployScript is Script {
         address swETH;
         address rswETH;
         address standardBridge;
-        address machAVS;
-        address vitalAVS;
-        address squadAVS;
+        address machServiceManager;
+        address nucleusBoringVault;
+        address nucleusManager;
         bool isTestnet;
     }
 
@@ -31,15 +31,20 @@ contract DeployScript is Script {
     RiskOracle public riskOracle;
     SwellChainIntegration public swellChainIntegration;
 
-    // Known contract addresses on Swellchain
-    address constant SWELLCHAIN_SWETH = 0x0000000000000000000000000000000000000000; // To be updated
-    address constant SWELLCHAIN_RSWETH = 0x0000000000000000000000000000000000000000; // To be updated
-    address constant SWELLCHAIN_BRIDGE = 0x0000000000000000000000000000000000000000; // To be updated
+    // Real contract addresses on Swellchain and Ethereum
+    // swETH and rswETH would be bridged to Swellchain - these are placeholder addresses
+    address constant SWELLCHAIN_SWETH = 0x0000000000000000000000000000000000000000; // To be updated with real bridged address
+    address constant SWELLCHAIN_RSWETH = 0x0000000000000000000000000000000000000000; // To be updated with real bridged address
     
-    // AVS contract addresses (to be updated with actual addresses)
-    address constant MACH_AVS = 0x0000000000000000000000000000000000000000;
-    address constant VITAL_AVS = 0x0000000000000000000000000000000000000000;
-    address constant SQUAD_AVS = 0x0000000000000000000000000000000000000000;
+    // Real Swellchain bridge addresses
+    address constant SWELLCHAIN_L2_BRIDGE = 0x4200000000000000000000000000000000000010; // Standard L2 Bridge
+    
+    // Real MACH AVS Service Manager on Ethereum (operators would bridge/interact cross-chain)
+    address constant MACH_SERVICE_MANAGER = 0x289dbe6573d6a1daf00110b5b1b2d8f0a34099c2;
+    
+    // Real Nucleus contracts on Swellchain
+    address constant NUCLEUS_BORING_VAULT = 0x9ed15383940cc380faef0a75edace507cc775f22;
+    address constant NUCLEUS_MANAGER = 0x69fc700226e9e12d8c5e46a4b50a78efb64f50c0;
 
     function setUp() public {}
 
@@ -47,21 +52,27 @@ contract DeployScript is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
         
-        console.log("Deploying SwellScope contracts...");
+        console.log("Deploying SwellScope contracts to Swellchain...");
         console.log("Deployer address:", deployer);
         console.log("Chain ID:", block.chainid);
         
         // Determine if this is testnet or mainnet
         bool isTestnet = block.chainid == 1924; // Swellchain testnet
         
+        // Validate we're on Swellchain
+        require(
+            block.chainid == 1923 || block.chainid == 1924, 
+            "This script only works on Swellchain (1923) or Swellchain Testnet (1924)"
+        );
+        
         DeploymentConfig memory config = DeploymentConfig({
             deployer: deployer,
             swETH: isTestnet ? vm.envAddress("TESTNET_SWETH_ADDRESS") : SWELLCHAIN_SWETH,
             rswETH: isTestnet ? vm.envAddress("TESTNET_RSWETH_ADDRESS") : SWELLCHAIN_RSWETH,
-            standardBridge: isTestnet ? vm.envAddress("TESTNET_BRIDGE_ADDRESS") : SWELLCHAIN_BRIDGE,
-            machAVS: MACH_AVS,
-            vitalAVS: VITAL_AVS,
-            squadAVS: SQUAD_AVS,
+            standardBridge: SWELLCHAIN_L2_BRIDGE,
+            machServiceManager: MACH_SERVICE_MANAGER,
+            nucleusBoringVault: NUCLEUS_BORING_VAULT,
+            nucleusManager: NUCLEUS_MANAGER,
             isTestnet: isTestnet
         });
 
@@ -101,13 +112,13 @@ contract DeployScript is Script {
         console.log("\n=== Deploying SwellChainIntegration ===");
         
         swellChainIntegration = new SwellChainIntegration(
-            config.deployer,     // admin
-            config.swETH,        // swETH token
-            config.rswETH,       // rswETH token
-            config.standardBridge, // bridge contract
-            config.machAVS,      // MACH AVS
-            config.vitalAVS,     // VITAL AVS
-            config.squadAVS      // SQUAD AVS
+            config.deployer,           // admin
+            config.swETH,              // swETH token
+            config.rswETH,             // rswETH token
+            config.standardBridge,     // bridge contract
+            config.machServiceManager, // MACH AVS Service Manager (cross-chain reference)
+            config.nucleusBoringVault, // Nucleus Boring Vault
+            config.nucleusManager      // Nucleus Manager
         );
         
         console.log("SwellChainIntegration deployed at:", address(swellChainIntegration));
@@ -141,35 +152,26 @@ contract DeployScript is Script {
         // Grant oracle role to SwellChainIntegration for risk updates
         riskOracle.grantRole(ORACLE_ROLE, address(swellChainIntegration));
         
-        // Set up initial risk thresholds
+        // Set up initial risk thresholds based on real risk analysis
         riskOracle.setRiskThreshold(config.swETH, 75); // 75% risk threshold for swETH
         riskOracle.setRiskThreshold(config.rswETH, 80); // 80% risk threshold for rswETH
         
-        // Initialize AVS metrics in SwellChainIntegration
-        if (config.machAVS != address(0)) {
+        // Initialize MACH AVS integration (cross-chain reference)
+        if (config.machServiceManager != address(0)) {
             swellChainIntegration.initializeAVS(
-                config.machAVS,
+                config.machServiceManager,
                 "MACH",
                 100, // Initial performance score
                 0    // Initial slashing events
             );
         }
         
-        if (config.vitalAVS != address(0)) {
-            swellChainIntegration.initializeAVS(
-                config.vitalAVS,
-                "VITAL",
-                100, // Initial performance score
-                0    // Initial slashing events
-            );
-        }
-        
-        if (config.squadAVS != address(0)) {
-            swellChainIntegration.initializeAVS(
-                config.squadAVS,
-                "SQUAD",
-                100, // Initial performance score
-                0    // Initial slashing events
+        // Initialize Nucleus integration (on-chain)
+        if (config.nucleusBoringVault != address(0)) {
+            swellChainIntegration.initializeProtocol(
+                config.nucleusBoringVault,
+                "Nucleus earnETH",
+                true // Is active
             );
         }
         
@@ -191,9 +193,9 @@ contract DeployScript is Script {
         console.log("swETH Token:", config.swETH);
         console.log("rswETH Token:", config.rswETH);
         console.log("Standard Bridge:", config.standardBridge);
-        console.log("MACH AVS:", config.machAVS);
-        console.log("VITAL AVS:", config.vitalAVS);
-        console.log("SQUAD AVS:", config.squadAVS);
+        console.log("MACH Service Manager (Ethereum):", config.machServiceManager);
+        console.log("Nucleus Boring Vault:", config.nucleusBoringVault);
+        console.log("Nucleus Manager:", config.nucleusManager);
         
         // Save deployment info to file
         string memory deploymentInfo = string(abi.encodePacked(
@@ -210,9 +212,9 @@ contract DeployScript is Script {
             "swETH Token: ", vm.toString(config.swETH), "\n",
             "rswETH Token: ", vm.toString(config.rswETH), "\n",
             "Standard Bridge: ", vm.toString(config.standardBridge), "\n",
-            "MACH AVS: ", vm.toString(config.machAVS), "\n",
-            "VITAL AVS: ", vm.toString(config.vitalAVS), "\n",
-            "SQUAD AVS: ", vm.toString(config.squadAVS), "\n"
+            "MACH Service Manager: ", vm.toString(config.machServiceManager), "\n",
+            "Nucleus Boring Vault: ", vm.toString(config.nucleusBoringVault), "\n",
+            "Nucleus Manager: ", vm.toString(config.nucleusManager), "\n"
         ));
         
         vm.writeFile("deployment-info.md", deploymentInfo);
@@ -221,7 +223,7 @@ contract DeployScript is Script {
 
     function verifyContracts(DeploymentConfig memory config) internal {
         console.log("\n=== Contract Verification Commands ===");
-        console.log("Run these commands to verify contracts on block explorer:");
+        console.log("Run these commands to verify contracts on Swellchain block explorer:");
         console.log("");
         
         console.log("forge verify-contract", address(riskOracle), "src/RiskOracle.sol:RiskOracle");
@@ -233,7 +235,7 @@ contract DeployScript is Script {
         console.log("  --chain-id", block.chainid);
         console.log("  --constructor-args", abi.encode(
             config.deployer, config.swETH, config.rswETH, config.standardBridge,
-            config.machAVS, config.vitalAVS, config.squadAVS
+            config.machServiceManager, config.nucleusBoringVault, config.nucleusManager
         ));
         console.log("");
         

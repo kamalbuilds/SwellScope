@@ -110,7 +110,7 @@ export interface ProtocolData {
   riskScore: number;
   users: number;
   logo: string;
-  category: 'restaking' | 'defi' | 'bridge' | 'avs';
+  category: 'restaking' | 'defi' | 'bridge' | 'avs' | 'yield-farming';
   isActive: boolean;
   chainId: number;
   deployedAt: Date;
@@ -120,7 +120,7 @@ export interface ProtocolData {
 export interface TransactionData {
   id: string;
   hash: string;
-  type: 'deposit' | 'withdraw' | 'rebalance' | 'claim';
+  type: 'deposit' | 'withdraw' | 'rebalance' | 'claim' | 'bridge';
   amount: number;
   token: string;
   user: string;
