@@ -71,7 +71,14 @@ export class CronService {
         if (this.isShuttingDown) return;
 
         const scheduledTask = this.tasks.get(name);
-        if (!scheduledTask || scheduledTask.isRunning) return;
+        if (!scheduledTask) {
+          logger.debug(`Cron task '${name}' skipped: Task not found`);
+          return;
+        }
+        if (scheduledTask.isRunning) {
+          logger.debug(`Cron task '${name}' skipped: Task is already running`);
+          return;
+        }
 
         scheduledTask.isRunning = true;
         scheduledTask.lastRun = new Date();
