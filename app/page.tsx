@@ -3,7 +3,7 @@
 import React from 'react';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import CrossChainPositions from '../../components/CrossChainPositions';
+import CrossChainPositions from '../components/CrossChainPositions';
 
 export default function SwellScopeDashboard() {
   const { address, isConnected } = useAccount();

@@ -3,3 +3,7 @@ node_modules
 .cursorrules
 SWELLCHAIN_APPLICATION.md
 .next/
+
+backend/dist
+backend/node_modules
+backend/.env

@@ -1,8 +1,8 @@
-import "../../styles/globals.css"
+import "../styles/globals.css"
 import { Metadata } from "next"
-import { Web3Provider } from "../../components/Web3Provider"
+import { Web3Provider } from "../components/Web3Provider"
 
-import { siteConfig } from "../../config/site"
+import { siteConfig } from "../config/site"
 
 export const metadata: Metadata = {
   title: {

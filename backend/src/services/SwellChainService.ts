@@ -32,7 +32,7 @@ export class SwellChainService {
         decimals: 18
       },
       contracts: {
-        'MACH': '0x1234...', // MACH AVS contract
+        'MACH': '0x71a77037870169d47aad6c2c9360861a4c0df2bf', // MACH AVS contract
         'VITAL': '0x5678...', // VITAL AVS contract  
         'SQUAD': '0x9abc...', // SQUAD AVS contract
         'SwellScope': '0xdef0...' // SwellScope vault contract
