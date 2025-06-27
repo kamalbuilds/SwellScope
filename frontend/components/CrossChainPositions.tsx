@@ -150,7 +150,7 @@ export default function CrossChainPositions({ userAddress, className }: CrossCha
           <div className="flex items-center justify-center py-8">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p>Loading cross-chain positions...</p>
+              <p className="text-white">Loading cross-chain positions...</p>
             </div>
           </div>
         </CardContent>
@@ -186,8 +186,8 @@ export default function CrossChainPositions({ userAddress, className }: CrossCha
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <p className="text-muted-foreground">No cross-chain positions found</p>
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="text-gray-400">No cross-chain positions found</p>
+            <p className="text-sm text-gray-400 mt-2">
               Connect your wallet and bridge assets to see your positions
             </p>
           </div>
@@ -214,9 +214,9 @@ export default function CrossChainPositions({ userAddress, className }: CrossCha
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-3">
                   <div className="flex items-center space-x-2">
-                    <span className="font-medium">{position.fromChain.name}</span>
-                    <span className="text-muted-foreground">→</span>
-                    <span className="font-medium">{position.toChain.name}</span>
+                    <span className="font-medium text-white">{position.fromChain.name}</span>
+                    <span className="text-gray-400">→</span>
+                    <span className="font-medium text-white">{position.toChain.name}</span>
                   </div>
                   {getStatusBadge(position.status)}
                 </div>
@@ -225,27 +225,27 @@ export default function CrossChainPositions({ userAddress, className }: CrossCha
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <p className="text-muted-foreground">Token</p>
-                  <p className="font-medium">{position.token.symbol}</p>
+                  <p className="text-gray-400">Token</p>
+                  <p className="font-medium text-white">{position.token.symbol}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Amount</p>
-                  <p className="font-medium">{position.amount.toFixed(4)}</p>
+                  <p className="text-gray-400">Amount</p>
+                  <p className="font-medium text-white">{position.amount.toFixed(4)}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Value</p>
-                  <p className="font-medium">{formatCurrency(position.valueUSD)}</p>
+                  <p className="text-gray-400">Value</p>
+                  <p className="font-medium text-white">{formatCurrency(position.valueUSD)}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Est. Yield</p>
-                  <p className="font-medium text-green-600">
+                  <p className="text-gray-400">Est. Yield</p>
+                  <p className="font-medium text-green-400">
                     {formatPercentage(position.estimatedYield)}
                   </p>
                 </div>
               </div>
 
-              <div className="mt-3 pt-3 border-t">
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <div className="mt-3 pt-3 border-t border-gray-600">
+                <div className="flex items-center justify-between text-sm text-gray-400">
                   <span>Bridge: {truncateAddress(position.bridgeContract)}</span>
                   <span>Last bridged: {position.lastBridged.toLocaleDateString()}</span>
                 </div>
@@ -254,18 +254,18 @@ export default function CrossChainPositions({ userAddress, className }: CrossCha
           ))}
         </div>
 
-        <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-          <h4 className="font-medium mb-2">Cross-Chain Summary</h4>
+        <div className="mt-6 p-4 bg-gray-800/50 rounded-lg">
+          <h4 className="font-medium mb-2 text-white">Cross-Chain Summary</h4>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-muted-foreground">Total Value</p>
-              <p className="font-bold text-lg">
+              <p className="text-gray-400">Total Value</p>
+              <p className="font-bold text-lg text-white">
                 {formatCurrency(positions.reduce((sum, pos) => sum + pos.valueUSD, 0))}
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground">Avg. Yield</p>
-              <p className="font-bold text-lg text-green-600">
+              <p className="text-gray-400">Avg. Yield</p>
+              <p className="font-bold text-lg text-green-400">
                 {formatPercentage(
                   positions.reduce((sum, pos) => sum + pos.estimatedYield, 0) / positions.length
                 )}

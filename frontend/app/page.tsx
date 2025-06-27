@@ -95,7 +95,7 @@ export default function SwellScopeDashboard() {
             </p>
           </div>
 
-          <CrossChainPositions userAddress={address} className="bg-white/10 backdrop-blur-md border border-white/20" />
+          <CrossChainPositions userAddress={address} className="bg-white/10 text-whitebackdrop-blur-md border border-white/20" />
         </div>
       </div>
     </div>
