@@ -1,355 +1,113 @@
-# REST API Reference
+# REST API Documentation
 
-SwellScope provides a comprehensive REST API for accessing analytics, managing portfolios, and integrating with external applications. The API follows RESTful principles and returns JSON responses.
+## Overview
+
+The SwellScope REST API provides comprehensive access to restaking analytics, risk management, and portfolio data. Built with production-grade reliability and security, the API enables programmatic access to all platform features.
 
 ## Base URL
 
 ```
 Production: https://api.swellscope.io/v1
-Staging: https://api-staging.swellscope.io/v1
-Local: http://localhost:8000/v1
+Testnet: https://api-testnet.swellscope.io/v1
 ```
 
 ## Authentication
 
-SwellScope API uses API keys for authentication. Include your API key in the request headers:
+### API Key Authentication
 
-```http
-Authorization: Bearer YOUR_API_KEY
-Content-Type: application/json
+All API requests require authentication using API keys:
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+     -H "Content-Type: application/json" \
+     https://api.swellscope.io/v1/portfolio
 ```
 
-### Getting an API Key
+### Obtaining API Keys
 
-1. Sign up at [SwellScope Dashboard](https://app.swellscope.io)
-2. Navigate to Settings → API Keys
+1. Log in to your SwellScope dashboard
+2. Navigate to Settings > API Keys
 3. Generate a new API key with appropriate permissions
+4. Store the key securely - it won't be shown again
 
-## Rate Limits
+### Rate Limiting
 
-| Tier | Requests/minute | Requests/hour |
-|------|----------------|---------------|
-| Free | 60 | 1,000 |
-| Pro | 600 | 10,000 |
-| Enterprise | 6,000 | 100,000 |
+- **Public endpoints**: 100 requests per minute
+- **Authenticated endpoints**: 1000 requests per minute
+- **Premium users**: 5000 requests per minute
 
 Rate limit headers are included in all responses:
 
 ```http
-X-RateLimit-Limit: 60
-X-RateLimit-Remaining: 59
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 999
 X-RateLimit-Reset: 1640995200
 ```
 
-## Response Format
+## Portfolio Endpoints
 
-All API responses follow this structure:
-
-```json
-{
-  "success": true,
-  "data": {
-    // Response data
-  },
-  "meta": {
-    "timestamp": "2024-01-15T10:30:00Z",
-    "version": "1.0.0"
-  }
-}
-```
-
-### Error Response
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "INVALID_REQUEST",
-    "message": "Invalid request parameters",
-    "details": {
-      "field": "amount",
-      "reason": "Must be greater than 0"
-    }
-  },
-  "meta": {
-    "timestamp": "2024-01-15T10:30:00Z",
-    "version": "1.0.0"
-  }
-}
-```
-
-## Analytics Endpoints
-
-### Get Portfolio Overview
-
-Get comprehensive portfolio analytics for a user.
+### Get Portfolio Summary
 
 ```http
-GET /analytics/portfolio/{address}
+GET /portfolio
+```
+
+Returns comprehensive portfolio information for the authenticated user.
+
+**Response:**
+```json
+{
+  "address": "0x742d35Cc6634C0532925a3b8D8AB0C1FD3D4d2bF",
+  "totalValue": "125.45",
+  "totalYield": "8.7",
+  "riskScore": 65,
+  "positions": [
+    {
+      "asset": "swETH",
+      "amount": "100.0",
+      "value": "125.45",
+      "chain": "swellchain",
+      "strategy": "conservative",
+      "apy": "8.7"
+    }
+  ],
+  "performance": {
+    "day": "0.15",
+    "week": "1.2",
+    "month": "8.7",
+    "year": "15.3"
+  },
+  "lastUpdate": "2024-01-15T10:30:00Z"
+}
+```
+
+### Get Portfolio History
+
+```http
+GET /portfolio/history?period=7d&interval=1h
 ```
 
 **Parameters:**
-- `address` (string, required): Ethereum address
-- `timeframe` (string, optional): `1h`, `24h`, `7d`, `30d`, `90d` (default: `24h`)
+- `period`: Time period (1d, 7d, 30d, 90d, 1y)
+- `interval`: Data interval (1m, 5m, 15m, 1h, 1d)
 
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
-    "address": "0x742d35Cc6635C0532925a3b8D4a6cC0e1b8e1",
-    "totalValue": {
-      "usd": 125000.50,
-      "eth": 62.5
-    },
-    "positions": [
-      {
-        "protocol": "SwellScope Vault",
-        "token": "swETH",
-        "amount": "50.0",
-        "value": {
-          "usd": 100000.00,
-          "eth": 50.0
-        },
-        "yield": {
-          "apy": 8.5,
-          "earned24h": {
-            "usd": 23.29,
-            "eth": 0.01164
-          }
-        }
-      }
-    ],
-    "riskMetrics": {
-      "overallRisk": 35,
-      "riskLevel": "Medium",
-      "components": {
-        "slashingRisk": 15,
-        "liquidityRisk": 25,
-        "smartContractRisk": 20,
-        "marketRisk": 40
-      }
-    },
-    "performance": {
-      "totalReturn": {
-        "usd": 5250.75,
-        "percentage": 4.38
-      },
-      "timeframe": "30d"
+  "period": "7d",
+  "interval": "1h",
+  "data": [
+    {
+      "timestamp": "2024-01-15T10:00:00Z",
+      "totalValue": "125.45",
+      "yield": "8.7",
+      "riskScore": 65
     }
-  }
-}
-```
-
-### Get Risk Assessment
-
-Get detailed risk assessment for assets or portfolios.
-
-```http
-GET /analytics/risk/{asset}
-```
-
-**Parameters:**
-- `asset` (string, required): Asset address or portfolio identifier
-- `detailed` (boolean, optional): Include detailed risk breakdown
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "asset": "0xf951E335afb289353dc249e82926178EaC7DEd78",
-    "symbol": "swETH",
-    "riskScore": 35,
-    "riskLevel": "Medium",
-    "components": {
-      "slashingRisk": {
-        "score": 15,
-        "description": "Low slashing probability",
-        "factors": [
-          "Validator performance: 98.5%",
-          "Slashing history: 0 events",
-          "Operator reputation: High"
-        ]
-      },
-      "liquidityRisk": {
-        "score": 25,
-        "description": "Good liquidity availability",
-        "factors": [
-          "DEX liquidity: $50M",
-          "Utilization rate: 75%",
-          "Exit queue: 2 days"
-        ]
-      },
-      "smartContractRisk": {
-        "score": 20,
-        "description": "Low technical risk",
-        "factors": [
-          "Audit status: Completed",
-          "Bug bounty: Active",
-          "Time since deployment: 8 months"
-        ]
-      },
-      "marketRisk": {
-        "score": 40,
-        "description": "Moderate market volatility",
-        "factors": [
-          "30d volatility: 25%",
-          "Correlation with ETH: 0.85",
-          "Market cap: $2.5B"
-        ]
-      }
-    },
-    "recommendations": [
-      "Consider diversifying across multiple validators",
-      "Monitor liquidity conditions during high volatility",
-      "Set stop-loss at 90% risk threshold"
-    ]
-  }
-}
-```
-
-### Get Yield Analytics
-
-Get yield performance and projections.
-
-```http
-GET /analytics/yield
-```
-
-**Query Parameters:**
-- `protocols` (string, optional): Comma-separated protocol names
-- `timeframe` (string, optional): Historical timeframe
-- `projection` (boolean, optional): Include yield projections
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "protocols": [
-      {
-        "name": "SwellScope Vault",
-        "currentApy": 8.5,
-        "averageApy30d": 8.2,
-        "tvl": {
-          "usd": 45000000,
-          "eth": 22500
-        },
-        "yieldSources": [
-          {
-            "source": "Ethereum Staking",
-            "contribution": 4.2,
-            "percentage": 49.4
-          },
-          {
-            "source": "AVS Restaking",
-            "contribution": 2.8,
-            "percentage": 32.9
-          },
-          {
-            "source": "DeFi Strategies",
-            "contribution": 1.5,
-            "percentage": 17.7
-          }
-        ]
-      }
-    ],
-    "projections": {
-      "7d": 8.6,
-      "30d": 8.4,
-      "90d": 8.8
-    }
-  }
-}
-```
-
-## Portfolio Management
-
-### Get User Strategies
-
-List all strategies for a user.
-
-```http
-GET /portfolio/strategies
-```
-
-**Headers:**
-- `X-User-Address` (string, required): User's Ethereum address
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "strategies": [
-      {
-        "id": "strategy_123",
-        "name": "Conservative Restaking",
-        "status": "active",
-        "allocation": {
-          "swETH": 60,
-          "rswETH": 30,
-          "cash": 10
-        },
-        "riskProfile": {
-          "maxRisk": 75,
-          "autoRebalance": true
-        },
-        "performance": {
-          "totalReturn": 4.2,
-          "timeframe": "30d"
-        },
-        "createdAt": "2024-01-01T00:00:00Z",
-        "updatedAt": "2024-01-15T10:30:00Z"
-      }
-    ]
-  }
-}
-```
-
-### Create Strategy
-
-Create a new investment strategy.
-
-```http
-POST /portfolio/strategies
-```
-
-**Request Body:**
-```json
-{
-  "name": "Aggressive Growth",
-  "allocation": {
-    "swETH": 40,
-    "rswETH": 50,
-    "nucleus": 10
-  },
-  "riskProfile": {
-    "maxRisk": 85,
-    "autoRebalance": true,
-    "emergencyExitThreshold": 95
-  },
-  "rebalanceFrequency": "weekly"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "strategyId": "strategy_456",
-    "status": "created",
-    "estimatedGas": 120000,
-    "transactionHash": null
-  }
+  ]
 }
 ```
 
 ### Update Risk Profile
-
-Update user's risk preferences.
 
 ```http
 PUT /portfolio/risk-profile
@@ -358,216 +116,359 @@ PUT /portfolio/risk-profile
 **Request Body:**
 ```json
 {
-  "maxRiskScore": 80,
+  "maxRiskScore": 75,
   "autoRebalance": true,
-  "emergencyExitThreshold": 90,
-  "notifications": {
-    "riskAlerts": true,
-    "rebalanceNotifications": true,
-    "emergencyAlerts": true
-  }
+  "yieldTarget": 10.0,
+  "riskTolerance": "moderate"
 }
-```
-
-## Market Data
-
-### Get Token Prices
-
-Get current and historical token prices.
-
-```http
-GET /market/prices
-```
-
-**Query Parameters:**
-- `tokens` (string, required): Comma-separated token symbols
-- `currency` (string, optional): `usd`, `eth` (default: `usd`)
-- `historical` (boolean, optional): Include price history
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "prices": {
-      "swETH": {
-        "current": 2000.50,
-        "change24h": 2.5,
-        "change7d": -1.2,
-        "marketCap": 2500000000,
-        "volume24h": 50000000
-      },
-      "rswETH": {
-        "current": 2050.75,
-        "change24h": 3.1,
-        "change7d": 0.8,
-        "marketCap": 1200000000,
-        "volume24h": 25000000
-      }
-    },
-    "lastUpdated": "2024-01-15T10:30:00Z"
-  }
-}
-```
-
-### Get Protocol TVL
-
-Get Total Value Locked across protocols.
-
-```http
-GET /market/tvl
 ```
 
 **Response:**
 ```json
 {
   "success": true,
-  "data": {
-    "totalTvl": {
-      "usd": 125000000,
-      "eth": 62500
-    },
-    "protocols": [
-      {
-        "name": "SwellScope",
-        "tvl": {
-          "usd": 45000000,
-          "eth": 22500
-        },
-        "change24h": 5.2
-      },
-      {
-        "name": "Nucleus",
-        "tvl": {
-          "usd": 80000000,
-          "eth": 40000
-        },
-        "change24h": 2.8
-      }
-    ]
+  "riskProfile": {
+    "maxRiskScore": 75,
+    "autoRebalance": true,
+    "yieldTarget": 10.0,
+    "riskTolerance": "moderate",
+    "lastUpdate": "2024-01-15T10:30:00Z"
   }
 }
 ```
 
-## AVS Monitoring
+## Risk Management Endpoints
 
-### Get AVS Metrics
-
-Get performance metrics for AVS services.
+### Get Risk Assessment
 
 ```http
-GET /avs/metrics
+GET /risk/assessment/{address}
 ```
 
-**Query Parameters:**
-- `services` (string, optional): Comma-separated AVS service names
-- `timeframe` (string, optional): Metrics timeframe
+Returns comprehensive risk analysis for a specific address or asset.
 
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
-    "services": [
-      {
-        "name": "MACH",
-        "status": "active",
-        "performanceScore": 95,
-        "metrics": {
-          "finalityTime": 8.5,
-          "uptime": 99.8,
-          "slashingEvents": 0,
-          "operatorCount": 125
-        },
-        "totalStaked": {
-          "usd": 150000000,
-          "eth": 75000
-        }
-      },
-      {
-        "name": "VITAL",
-        "status": "not_deployed",
-        "performanceScore": 0,
-        "metrics": {
-          "verificationRate": 0,
-          "fraudProofs": 0,
-          "uptime": 0
-        }
-      }
-    ]
-  }
-}
-```
-
-## Transactions
-
-### Get Transaction History
-
-Get user's transaction history.
-
-```http
-GET /transactions/{address}
-```
-
-**Query Parameters:**
-- `limit` (number, optional): Number of transactions (max 100)
-- `offset` (number, optional): Pagination offset
-- `type` (string, optional): Transaction type filter
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "transactions": [
-      {
-        "hash": "0x123...",
-        "type": "deposit",
-        "protocol": "SwellScope Vault",
-        "amount": {
-          "token": "swETH",
-          "value": "10.0",
-          "usd": 20000.00
-        },
-        "timestamp": "2024-01-15T10:30:00Z",
-        "status": "confirmed",
-        "gasUsed": 120000,
-        "gasPrice": "20000000000"
-      }
-    ],
-    "pagination": {
-      "total": 150,
-      "limit": 50,
-      "offset": 0,
-      "hasMore": true
+  "address": "0x742d35Cc6634C0532925a3b8D8AB0C1FD3D4d2bF",
+  "overallRisk": 65,
+  "riskFactors": {
+    "slashingRisk": 45,
+    "liquidityRisk": 60,
+    "smartContractRisk": 25,
+    "marketRisk": 70
+  },
+  "alerts": [
+    {
+      "type": "warning",
+      "message": "High market volatility detected",
+      "severity": "medium",
+      "timestamp": "2024-01-15T10:30:00Z"
     }
+  ],
+  "recommendations": [
+    {
+      "action": "reduce_exposure",
+      "reason": "High market risk",
+      "impact": "Lower portfolio volatility",
+      "urgency": "medium"
+    }
+  ]
+}
+```
+
+### Get Validator Risk Metrics
+
+```http
+GET /risk/validator/{validatorAddress}
+```
+
+**Response:**
+```json
+{
+  "validatorAddress": "0x...",
+  "performanceScore": 95,
+  "slashingRisk": 15,
+  "uptime": 99.8,
+  "totalStaked": "1000.0",
+  "slashingHistory": [],
+  "riskFactors": {
+    "performance": 5,
+    "slashing": 15,
+    "uptime": 2,
+    "concentration": 10
+  },
+  "recommendation": "low_risk"
+}
+```
+
+### Get AVS Risk Analysis
+
+```http
+GET /risk/avs/{avsAddress}
+```
+
+**Response:**
+```json
+{
+  "avsAddress": "0x...",
+  "avsName": "MACH",
+  "overallRisk": 35,
+  "performanceScore": 92,
+  "slashingEvents": 0,
+  "operatorCount": 50,
+  "totalStaked": "10000.0",
+  "metrics": {
+    "uptime": 99.9,
+    "latency": 250,
+    "successRate": 99.95
+  },
+  "riskAssessment": "low"
+}
+```
+
+## Analytics Endpoints
+
+### Get Yield Analytics
+
+```http
+GET /analytics/yield?asset=swETH&period=30d
+```
+
+**Parameters:**
+- `asset`: Asset symbol (swETH, rswETH, ETH)
+- `period`: Analysis period (7d, 30d, 90d, 1y)
+
+**Response:**
+```json
+{
+  "asset": "swETH",
+  "period": "30d",
+  "currentYield": 8.7,
+  "averageYield": 8.2,
+  "yieldHistory": [
+    {
+      "date": "2024-01-15",
+      "yield": 8.7,
+      "volume": "1000000"
+    }
+  ],
+  "projections": {
+    "nextWeek": 8.9,
+    "nextMonth": 9.1,
+    "confidence": 0.75
   }
 }
 ```
 
-## Webhooks
-
-### Register Webhook
-
-Register a webhook for real-time notifications.
+### Get Performance Benchmarks
 
 ```http
-POST /webhooks
+GET /analytics/benchmarks
+```
+
+**Response:**
+```json
+{
+  "benchmarks": {
+    "ethStaking": 4.2,
+    "swellStaking": 8.7,
+    "defiAverage": 6.5,
+    "restakingAverage": 9.8
+  },
+  "relativePerfomance": {
+    "vsEthStaking": "+107%",
+    "vsDefi": "+34%",
+    "vsRestaking": "-11%"
+  },
+  "lastUpdate": "2024-01-15T10:30:00Z"
+}
+```
+
+### Get Market Intelligence
+
+```http
+GET /analytics/market-intelligence
+```
+
+**Response:**
+```json
+{
+  "restakingMarket": {
+    "totalTvl": "2500000000",
+    "growth24h": "2.5%",
+    "averageYield": 9.8,
+    "activeValidators": 15000
+  },
+  "swellchainMetrics": {
+    "chainTvl": "500000000",
+    "averageBlockTime": 2.1,
+    "transactionThroughput": 2000,
+    "machUptime": 99.9
+  },
+  "opportunities": [
+    {
+      "type": "yield_farming",
+      "protocol": "Ambient",
+      "estimatedApy": 12.5,
+      "riskScore": 70,
+      "liquidity": "high"
+    }
+  ]
+}
+```
+
+## Cross-Chain Endpoints
+
+### Get Cross-Chain Positions
+
+```http
+GET /cross-chain/positions
+```
+
+**Response:**
+```json
+{
+  "positions": [
+    {
+      "chainId": 1,
+      "chainName": "Ethereum",
+      "assets": [
+        {
+          "symbol": "swETH",
+          "balance": "50.0",
+          "value": "62.75",
+          "yield": "4.2"
+        }
+      ]
+    },
+    {
+      "chainId": 1923,
+      "chainName": "Swellchain",
+      "assets": [
+        {
+          "symbol": "swETH",
+          "balance": "50.0",
+          "value": "62.70",
+          "yield": "8.7"
+        }
+      ]
+    }
+  ],
+  "totalValue": "125.45",
+  "totalYield": "6.45"
+}
+```
+
+### Initiate Bridge Transfer
+
+```http
+POST /cross-chain/bridge
 ```
 
 **Request Body:**
 ```json
 {
-  "url": "https://your-app.com/webhooks/swellscope",
-  "events": [
-    "risk_alert",
-    "rebalance_completed",
-    "emergency_exit",
-    "yield_update"
-  ],
-  "filters": {
-    "address": "0x742d35Cc6635C0532925a3b8D4a6cC0e1b8e1",
-    "minRiskScore": 80
+  "fromChain": 1,
+  "toChain": 1923,
+  "asset": "swETH",
+  "amount": "10.0",
+  "recipient": "0x742d35Cc6634C0532925a3b8D8AB0C1FD3D4d2bF"
+}
+```
+
+**Response:**
+```json
+{
+  "bridgeId": "bridge_123456789",
+  "status": "initiated",
+  "estimatedTime": "15 minutes",
+  "fees": {
+    "bridgeFee": "0.001",
+    "gasFee": "0.005"
+  },
+  "transactionHash": "0x..."
+}
+```
+
+### Get Bridge Status
+
+```http
+GET /cross-chain/bridge/{bridgeId}
+```
+
+**Response:**
+```json
+{
+  "bridgeId": "bridge_123456789",
+  "status": "completed",
+  "fromChain": 1,
+  "toChain": 1923,
+  "asset": "swETH",
+  "amount": "10.0",
+  "actualTime": "12 minutes",
+  "transactionHashes": {
+    "deposit": "0x...",
+    "withdrawal": "0x..."
+  },
+  "completedAt": "2024-01-15T10:42:00Z"
+}
+```
+
+## Strategy Endpoints
+
+### Get Available Strategies
+
+```http
+GET /strategies
+```
+
+**Response:**
+```json
+{
+  "strategies": [
+    {
+      "id": "conservative_sweth",
+      "name": "Conservative swETH",
+      "description": "Low-risk swETH staking with minimal exposure to restaking",
+      "riskScore": 25,
+      "expectedYield": 6.5,
+      "minimumDeposit": "1.0",
+      "assets": ["swETH"],
+      "features": ["auto_rebalancing", "emergency_exit"]
+    },
+    {
+      "id": "aggressive_restaking",
+      "name": "Aggressive Restaking",
+      "description": "High-yield restaking across multiple AVS services",
+      "riskScore": 80,
+      "expectedYield": 15.2,
+      "minimumDeposit": "5.0",
+      "assets": ["swETH", "rswETH"],
+      "features": ["yield_optimization", "risk_management"]
+    }
+  ]
+}
+```
+
+### Deploy Strategy
+
+```http
+POST /strategies/{strategyId}/deploy
+```
+
+**Request Body:**
+```json
+{
+  "amount": "100.0",
+  "riskParameters": {
+    "maxRiskScore": 75,
+    "autoRebalance": true,
+    "emergencyExit": true
+  },
+  "customSettings": {
+    "rebalanceThreshold": 0.05,
+    "yieldTarget": 10.0
   }
 }
 ```
@@ -575,100 +476,272 @@ POST /webhooks
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
-    "webhookId": "webhook_789",
-    "secret": "whsec_abc123...",
-    "status": "active"
+  "deploymentId": "deploy_123456789",
+  "status": "deploying",
+  "estimatedTime": "5 minutes",
+  "transactionHash": "0x...",
+  "strategyAddress": "0x..."
+}
+```
+
+## AVS Monitoring Endpoints
+
+### Get AVS Performance
+
+```http
+GET /avs/performance
+```
+
+**Response:**
+```json
+{
+  "avsServices": [
+    {
+      "name": "MACH",
+      "address": "0x...",
+      "performanceScore": 95,
+      "uptime": 99.9,
+      "slashingEvents": 0,
+      "totalStaked": "10000.0",
+      "operatorCount": 50,
+      "yield": 12.5,
+      "status": "active"
+    },
+    {
+      "name": "VITAL",
+      "address": "0x...",
+      "performanceScore": 0,
+      "uptime": 0,
+      "status": "not_deployed"
+    }
+  ],
+  "summary": {
+    "totalAvs": 3,
+    "activeAvs": 1,
+    "averagePerformance": 95,
+    "totalStaked": "10000.0"
   }
 }
 ```
 
-## Error Codes
+### Get MACH Specific Metrics
 
-| Code | Description |
-|------|-------------|
-| `INVALID_REQUEST` | Request parameters are invalid |
-| `UNAUTHORIZED` | Invalid or missing API key |
-| `FORBIDDEN` | Insufficient permissions |
-| `NOT_FOUND` | Resource not found |
-| `RATE_LIMITED` | Rate limit exceeded |
-| `INTERNAL_ERROR` | Internal server error |
-| `NETWORK_ERROR` | Blockchain network error |
-| `INSUFFICIENT_BALANCE` | Insufficient token balance |
-| `SLIPPAGE_EXCEEDED` | Transaction slippage too high |
-
-## SDK Examples
-
-### JavaScript/TypeScript
-
-```typescript
-import { SwellScopeAPI } from '@swellscope/sdk';
-
-const api = new SwellScopeAPI({
-  apiKey: 'your-api-key',
-  environment: 'production' // or 'staging'
-});
-
-// Get portfolio overview
-const portfolio = await api.analytics.getPortfolio(
-  '0x742d35Cc6635C0532925a3b8D4a6cC0e1b8e1'
-);
-
-// Create new strategy
-const strategy = await api.portfolio.createStrategy({
-  name: 'Conservative Growth',
-  allocation: { swETH: 70, rswETH: 30 },
-  riskProfile: { maxRisk: 75, autoRebalance: true }
-});
+```http
+GET /avs/mach/metrics
 ```
 
-### Python
+**Response:**
+```json
+{
+  "service": "MACH",
+  "performance": {
+    "uptime": 99.9,
+    "avgBlockTime": 2.1,
+    "finalityTime": 0.8,
+    "tps": 2000
+  },
+  "staking": {
+    "totalStaked": "10000.0",
+    "operatorCount": 50,
+    "averageStake": "200.0",
+    "yield": 12.5
+  },
+  "security": {
+    "slashingEvents": 0,
+    "riskScore": 15,
+    "validatorCount": 50
+  },
+  "lastUpdate": "2024-01-15T10:30:00Z"
+}
+```
+
+## Alerts and Notifications
+
+### Get Active Alerts
+
+```http
+GET /alerts
+```
+
+**Response:**
+```json
+{
+  "alerts": [
+    {
+      "id": "alert_123",
+      "type": "risk_warning",
+      "severity": "medium",
+      "message": "Portfolio risk score exceeded 75%",
+      "details": {
+        "currentRisk": 78,
+        "threshold": 75,
+        "affectedAssets": ["swETH"]
+      },
+      "timestamp": "2024-01-15T10:30:00Z",
+      "acknowledged": false
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "critical": 0,
+    "warning": 3,
+    "info": 2
+  }
+}
+```
+
+### Create Alert Rule
+
+```http
+POST /alerts/rules
+```
+
+**Request Body:**
+```json
+{
+  "name": "High Risk Alert",
+  "condition": {
+    "metric": "portfolio_risk",
+    "operator": "greater_than",
+    "threshold": 80
+  },
+  "notifications": ["email", "webhook"],
+  "enabled": true
+}
+```
+
+### Acknowledge Alert
+
+```http
+PUT /alerts/{alertId}/acknowledge
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "alertId": "alert_123",
+  "acknowledgedAt": "2024-01-15T10:45:00Z"
+}
+```
+
+## Error Handling
+
+### HTTP Status Codes
+
+- `200` - Success
+- `201` - Created
+- `400` - Bad Request
+- `401` - Unauthorized
+- `403` - Forbidden
+- `404` - Not Found
+- `429` - Rate Limited
+- `500` - Internal Server Error
+
+### Error Response Format
+
+```json
+{
+  "error": {
+    "code": "INVALID_PARAMETER",
+    "message": "The specified asset is not supported",
+    "details": {
+      "parameter": "asset",
+      "value": "INVALID_TOKEN",
+      "supported": ["swETH", "rswETH", "ETH"]
+    },
+    "timestamp": "2024-01-15T10:30:00Z",
+    "requestId": "req_123456789"
+  }
+}
+```
+
+## SDK and Libraries
+
+### JavaScript/TypeScript SDK
+
+```bash
+npm install @swellscope/sdk
+```
+
+```typescript
+import { SwellScopeSDK } from '@swellscope/sdk';
+
+const sdk = new SwellScopeSDK({
+  apiKey: 'your-api-key',
+  environment: 'production' // or 'testnet'
+});
+
+// Get portfolio
+const portfolio = await sdk.portfolio.get();
+
+// Get risk assessment
+const risk = await sdk.risk.assess(address);
+
+// Monitor AVS performance
+const machMetrics = await sdk.avs.getMachMetrics();
+```
+
+### Python SDK
+
+```bash
+pip install swellscope-python
+```
 
 ```python
-from swellscope import SwellScopeAPI
+from swellscope import SwellScopeClient
 
-api = SwellScopeAPI(
+client = SwellScopeClient(
     api_key='your-api-key',
     environment='production'
 )
 
+# Get portfolio
+portfolio = client.portfolio.get()
+
 # Get risk assessment
-risk = api.analytics.get_risk_assessment(
-    asset='0xf951E335afb289353dc249e82926178EaC7DEd78'
-)
+risk = client.risk.assess(address)
 
-# Get yield analytics
-yield_data = api.analytics.get_yield_analytics(
-    protocols=['SwellScope Vault'],
-    timeframe='30d'
-)
+# Monitor AVS performance
+mach_metrics = client.avs.get_mach_metrics()
 ```
 
-## Testing
+## Webhooks
 
-### Sandbox Environment
+### Webhook Configuration
 
-Use the sandbox environment for testing:
+Configure webhooks in your dashboard to receive real-time notifications:
 
+```json
+{
+  "url": "https://your-app.com/webhooks/swellscope",
+  "events": [
+    "portfolio.updated",
+    "risk.alert",
+    "strategy.rebalanced",
+    "bridge.completed"
+  ],
+  "secret": "your-webhook-secret"
+}
 ```
-Base URL: https://api-sandbox.swellscope.io/v1
+
+### Webhook Payload
+
+```json
+{
+  "event": "risk.alert",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "data": {
+    "address": "0x742d35Cc6634C0532925a3b8D8AB0C1FD3D4d2bF",
+    "riskScore": 85,
+    "threshold": 80,
+    "alert": {
+      "type": "risk_threshold_exceeded",
+      "severity": "high",
+      "message": "Portfolio risk score exceeded threshold"
+    }
+  }
+}
 ```
 
-Sandbox features:
-- No real transactions
-- Simulated data responses
-- Rate limits: 1000 requests/hour
-- Free API access
-
-### Postman Collection
-
-Download our Postman collection for easy API testing:
-[SwellScope API Collection](https://api.swellscope.io/postman/collection.json)
-
----
-
-For more API documentation:
-- [WebSocket API](websocket.md) - Real-time data streaming
-- [GraphQL API](graphql.md) - Flexible data queries
-- [SDK Documentation](sdk.md) - Client libraries 
+This comprehensive REST API enables full programmatic access to SwellScope's restaking analytics and risk management capabilities. 

@@ -69,12 +69,11 @@
 * [Scaling Guide](deployment/scaling-guide.md)
 
 ## Security
-
-* [Security Overview](security/security-overview.md)
-* [Audit Reports](security/audit-reports.md)
+* [Security Overview](security/overview.md)
+* [Audit Reports](security/audits.md)
 * [Risk Mitigation](security/risk-mitigation.md)
-* [Emergency Procedures](security/emergency-procedures.md)
-* [Bug Bounty Program](security/bug-bounty-program.md)
+* [Emergency Procedures](security/emergency.md)
+* [Bug Bounty Program](security/bug-bounty.md)
 
 ## User Guides
 
@@ -92,9 +91,8 @@
 * [Performance Optimization](advanced-topics/performance-optimization.md)
 
 ## Reference
-
 * [Glossary](reference/glossary.md)
 * [Contract Addresses](reference/contract-addresses.md)
-* [Network Information](reference/network-information.md)
+* [Network Information](reference/networks.md)
 * [Error Codes](reference/error-codes.md)
 * [FAQ](reference/faq.md)
